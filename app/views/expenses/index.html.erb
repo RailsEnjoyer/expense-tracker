@@ -1,0 +1,12 @@
+<h1>All expenses</h1>
+<% @expenses.each do |expense| %>
+  <p><%= "#{expense.title} | #{expense.id}" %></p>
+  <p><%= expense.spent_on %></p>
+  <div>
+    <%= link_to "view", expense %>
+  </div>
+<% end %>
+
+<p>
+  <%= link_to "Create new", new_expense_path %>
+</p>

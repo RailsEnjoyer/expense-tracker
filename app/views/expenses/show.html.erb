@@ -1,0 +1,13 @@
+<h1>Expense <%= @expense.id %></h1>
+<p><%= @expense.title %></p>
+<p><%= @expense.amount %></p>
+<p><%= @expense.spent_on %></p>
+<div>
+  <%= button_to "Delete", @product, method: :delete %>
+</div>
+<div>
+  <%= link_to "Update", edit_expense_path %>
+</div>
+<div>
+  <%= link_to "Back", root_path %>
+</div>
