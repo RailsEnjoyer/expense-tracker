@@ -74,7 +74,23 @@ RSpec.describe Expense, type: :model do
     end
 
     it 'is invalid with incorrect format' do 
-      # TODO
+      expense = FactoryBot.build(:expense, spent_on: 'i am invalid date')
+
+      expect(expense).to_not be_valid
+      expect(expense.errors[:spent_on]).to include("can't be blank")
+    end
+  end
+
+  context 'Custom validation spent_on_not_in_future' do 
+    it 'pass when the date is not in the future' do 
+      expect(FactoryBot.create(:expense, spent_on: Date.today)).to be_valid
+    end
+
+    it 'fails when the date is in the future' do 
+      expense = FactoryBot.build(:expense, spent_on: Date.today + 1)
+
+      expect(expense).to_not be_valid
+      expect(expense.errors[:spent_on]).to include("cant't be in the future")
     end
   end
 end
