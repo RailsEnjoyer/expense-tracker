@@ -1,11 +1,11 @@
 Rails.application.routes.draw do
-  get "registrations/new"
-  get "registrations/create"
-  get "users/new"
-  get "users/create"
   get "up" => "rails/health#show", as: :rails_health_check
 
   resources :expenses
+  resources :users, only: [:show, :edit, :update, :destroy]
+
+  get '/signup', to: 'registrations#new', as: 'signup'
+  post '/signup', to: 'registrations#create', as: 'registrations'
 
   root "expenses#index"
 end

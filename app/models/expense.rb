@@ -1,4 +1,6 @@
 class Expense < ApplicationRecord
+  belongs_to :user
+
   validates :title, :amount, :spent_on, presence: true
   validates :title, length: { maximum: 16 }
   validate :spent_on_not_in_future

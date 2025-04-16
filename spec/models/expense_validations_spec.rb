@@ -94,3 +94,5 @@ RSpec.describe Expense, type: :model do
     end
   end
 end
+
+# TODO - tests with associations
