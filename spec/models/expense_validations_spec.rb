@@ -93,6 +93,8 @@ RSpec.describe Expense, type: :model do
       expect(expense.errors[:spent_on]).to include("cant't be in the future")
     end
   end
+
+  
 end
 
 # TODO - tests with associations

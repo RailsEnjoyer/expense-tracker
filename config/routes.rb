@@ -7,5 +7,9 @@ Rails.application.routes.draw do
   get '/signup', to: 'registrations#new', as: 'signup'
   post '/signup', to: 'registrations#create', as: 'registrations'
 
+  get 'login', to: 'sessions#new'
+  post 'login', to: 'sessions#create'
+  delete 'logout', to: 'sessions#destroy'
+
   root "expenses#index"
 end

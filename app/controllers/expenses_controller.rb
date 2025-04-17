@@ -1,8 +1,9 @@
 class ExpensesController < ApplicationController
+  before_action :require_login
   before_action :set_expense, only: %i[show edit update destroy]
 
   def index
-    @expenses = Expense.all
+    @expenses = current_user.expenses
   end
 
   def show
@@ -13,7 +14,7 @@ class ExpensesController < ApplicationController
   end
 
   def create
-    @expense = Expense.new(expense_params)
+    @expense = current_user.expenses.new(expense_params)
 
     if @expense.save 
       redirect_to @expense
@@ -29,7 +30,7 @@ class ExpensesController < ApplicationController
     if @expense.update(expense_params)
       redirect_to @expense
     else
-      render :edit
+      render :edit, status: :unprocessable_entity
     end
   end
 
@@ -41,10 +42,10 @@ class ExpensesController < ApplicationController
   private
 
   def set_expense
-    @expense = Expense.find(params.expect(:id))
+    @expense = current_user.expenses.find(params[:id])
   end
 
   def expense_params
-    params.expect(expense: [ :title, :amount, :spent_on ])
+    params.require(:expense).permit(:title, :amount, :spent_on)
   end
 end
