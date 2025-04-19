@@ -19,7 +19,7 @@ class ExpensesController < ApplicationController
     if @expense.save 
       redirect_to @expense
     else
-      render :new
+      render :new, status: :unprocessable_entity
     end
   end
 
