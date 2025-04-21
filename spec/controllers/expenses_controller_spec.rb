@@ -1,4 +1,5 @@
 require 'rails_helper'
+require 'support/authenticated'
 
 RSpec.describe "Expenses", type: :request do 
   let(:user){ create(:user) }
@@ -6,26 +7,42 @@ RSpec.describe "Expenses", type: :request do
   let(:valid_params){ attributes_for(:expense) }
   let(:invalid_params){ attributes_for(:expense, title: nil) }
 
-  before do 
-    post login_path, params: { email: user.email, password: user.password }
-  end
+  describe "GET /expenses" do
+    context "authenticated" do 
+      include_context "authenticated" 
+      let!(:expenses) { create_list(:expense, 3, user: user) }
+      
+      it "returns 200 and list of expenses" do 
+        get expenses_path
 
-  describe "GET /expenses" do 
-    let!(:expenses) { create_list(:expense, 3, user: user) }
-    
-    it "returns 200 and list of expenses" do 
-      get expenses_path
+        expect(response).to have_http_status(:ok)
 
-      expect(response).to have_http_status(:ok)
+        expenses.each do |expense| 
+          expect(response.body).to include(expense.title)
+        end
+      end
+    end
 
-      expenses.each do |expense| 
-        expect(response.body).to include(expense.title)
+    context "not authenticated" do
+      it "asd" do 
+        get expenses_path 
+
+        expect(response).to have_http_status(:found)
+        expect(response).to redirect_to(login_path)
+
+        follow_redirect!
+
+        expect(response.body).to include("Join us!")
       end
     end
   end
 
   describe "POST /expenses" do
+    require 'support/authenticated'
+
     context "with valid params" do
+      include_context "authenticated" 
+
       it "creates expense and redirects" do 
         expect { post expenses_path, params: { expense: valid_params } }.to change(user.expenses, :count).by(1)
         expect(response).to redirect_to(expense_path(Expense.last))
@@ -33,6 +50,8 @@ RSpec.describe "Expenses", type: :request do
     end
 
     context "with invalid params" do 
+      include_context "authenticated" 
+
       it "not saves and returns 422" do 
         expect { post expenses_path, params: { expense: invalid_params } }.to_not change(Expense, :count)
         expect(response).to have_http_status(:unprocessable_entity)
@@ -43,6 +62,7 @@ RSpec.describe "Expenses", type: :request do
   end
 
   describe "GET #new" do 
+    include_context "authenticated" 
     it "renders form" do
       get new_expense_path
 
@@ -53,6 +73,7 @@ RSpec.describe "Expenses", type: :request do
   end
 
   describe "PATCH /expenses/:id" do 
+    include_context "authenticated" 
     let!(:old_expense) { create(:expense, user: user, title: "Old title") }
     let(:updated_expense) { { title: "New title", amount: old_expense.amount, spent_on: old_expense.spent_on } }
 
@@ -75,7 +96,14 @@ RSpec.describe "Expenses", type: :request do
   end
 
   describe "DELETE /expenses/:id" do 
+    include_context "authenticated" 
+
     before { delete expense_path(expense) }
+
+    # context "without logging in" do 
+    #   let!(:expense) { create}
+    #   expect
+    # end
     
     it "redirects with 302" do 
       expect(response).to have_http_status(:found)

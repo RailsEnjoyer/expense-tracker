@@ -1,4 +1,4 @@
-<h1>Вход на сайт</h1>
+<h1>Join us!</h1>
 
 <% if flash[:alert] %>
   <p class="alert"><%= flash[:alert] %></p>
@@ -11,11 +11,11 @@
   </div>
 
   <div class="field">
-    <%= f.label :password, "Пароль" %><br>
+    <%= f.label :password, "Password" %><br>
     <%= f.password_field :password, required: true %>
   </div>
 
   <div class="actions">
-    <%= f.submit "Войти" %>
+    <%= f.submit "Log in" %>
   </div>
 <% end %>
