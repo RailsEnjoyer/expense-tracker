@@ -24,7 +24,7 @@ RSpec.describe "Expenses", type: :request do
     end
 
     context "not authenticated" do
-      it "asd" do 
+      it "redirects to log in page" do 
         get expenses_path 
 
         expect(response).to have_http_status(:found)
@@ -38,8 +38,6 @@ RSpec.describe "Expenses", type: :request do
   end
 
   describe "POST /expenses" do
-    require 'support/authenticated'
-
     context "with valid params" do
       include_context "authenticated" 
 
@@ -62,69 +60,110 @@ RSpec.describe "Expenses", type: :request do
   end
 
   describe "GET #new" do 
-    include_context "authenticated" 
-    it "renders form" do
-      get new_expense_path
+    context "authenticated" do
+      include_context "authenticated" 
 
-      expect(response).to have_http_status(:ok)
-      expect(response).to render_template(:new)
-      expect(response.body).to include("expense_title")
+      it "renders form" do
+        get new_expense_path
+
+        expect(response).to have_http_status(:ok)
+        expect(response).to render_template(:new)
+        expect(response.body).to include("expense_title")
+      end
+    end
+
+    context "not authenticated" do 
+      it "redirects to log in page" do 
+        get new_expense_path
+
+        expect(response).to have_http_status(:found)
+        expect(response).to redirect_to(login_path)
+
+        follow_redirect!
+
+        expect(response.body).to include("Join us!")
+      end
     end
   end
 
   describe "PATCH /expenses/:id" do 
-    include_context "authenticated" 
     let!(:old_expense) { create(:expense, user: user, title: "Old title") }
     let(:updated_expense) { { title: "New title", amount: old_expense.amount, spent_on: old_expense.spent_on } }
 
-    it "renders form" do 
-      get edit_expense_path(expense)
+    context "authenticated" do 
+      include_context "authenticated" 
 
-      expect(response).to have_http_status(:ok)
-      expect(response).to render_template(:edit)
-      expect(response.body).to include("expense_title")
+      it "renders form" do 
+        get edit_expense_path(expense)
+
+        expect(response).to have_http_status(:ok)
+        expect(response).to render_template(:edit)
+        expect(response.body).to include("expense_title")
+      end
+
+      it "updates expense" do 
+        expect { 
+          patch expense_path(old_expense), params: { expense: updated_expense }
+          old_expense.reload 
+        }.to change{ old_expense.title }.from("Old title").to("New title")
+
+        expect(response).to redirect_to(expense_path(old_expense))
+      end
     end
 
-    it "updates expense" do 
-      expect { 
-        patch expense_path(old_expense), params: { expense: updated_expense }
-        old_expense.reload 
-      }.to change{ old_expense.title }.from("Old title").to("New title")
+    context "not authenticated" do 
+      it "redirects to log in page" do 
+        get edit_expense_path(expense)
 
-      expect(response).to redirect_to(expense_path(old_expense))
+        expect(response).to have_http_status(:found)
+        expect(response).to redirect_to(login_path)
+
+        follow_redirect!
+
+        expect(response.body).to include("Join us!")
+      end
     end
   end
 
   describe "DELETE /expenses/:id" do 
-    include_context "authenticated" 
+    context "authenticated" do 
+      include_context "authenticated" 
+      before { delete expense_path(expense) }
 
-    before { delete expense_path(expense) }
-
-    # context "without logging in" do 
-    #   let!(:expense) { create}
-    #   expect
-    # end
-    
-    it "redirects with 302" do 
-      expect(response).to have_http_status(:found)
-    end
-
-    it "redirects to root path" do
-      expect(response).to redirect_to(root_path)
-    end
-
-    context "after redirect" do 
-      before { follow_redirect! }
-
-      it "returns 200 in root path" do
-        expect(response).to have_http_status(:ok)
+      it "redirects with 302" do 
+        expect(response).to have_http_status(:found)
       end
+  
+      it "redirects to root path" do
+        expect(response).to redirect_to(root_path)
+      end
+  
+      context "after redirect" do 
+        before { follow_redirect! }
+  
+        it "returns 200 in root path" do
+          expect(response).to have_http_status(:ok)
+        end
+  
+        it "removes the expense from the list" do 
+          expect(response.body).to_not include(expense.title)
+        end
+      end
+    end
+    
+    context "not authenticated" do 
+      it "redirects to log in page" do 
+        delete expense_path(expense)
 
-      it "removes the expense from the list" do 
-        expect(response.body).to_not include(expense.title)
+        expect(response).to have_http_status(:found)
+        expect(response).to redirect_to(login_path)
+
+        follow_redirect!
+
+        expect(response.body).to include("Join us!")
       end
     end
   end
 
-  # TODO: not logged user trying to access controllers, tests for show and edit, render to :edit in PATCH
+  # TODO: tests for show and edit, render to :edit in PATCH
 end
