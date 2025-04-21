@@ -1,5 +1,4 @@
 require 'rails_helper'
-require 'support/authenticated'
 
 RSpec.describe "Expenses", type: :request do 
   let(:user){ create(:user) }
@@ -24,16 +23,31 @@ RSpec.describe "Expenses", type: :request do
     end
 
     context "not authenticated" do
-      it "redirects to log in page" do 
-        get expenses_path 
+      include_examples "redirects to login", :get, proc { expenses_path }
+    end
+  end
 
-        expect(response).to have_http_status(:found)
-        expect(response).to redirect_to(login_path)
+  describe "GET expenses/:id" do 
+    context "authenticated" do 
+      include_context "authenticated"
 
-        follow_redirect!
+      it "returns show page with params" do 
+        get expense_path(expense)
+        expect(response).to have_http_status(:ok)
 
-        expect(response.body).to include("Join us!")
+        [
+          "Expense #{expense.id}",
+          expense.title,
+          expense.amount.to_s,
+          expense.spent_on.to_s
+        ].each do |expected_param|
+          expect(response.body).to include(expected_param)
+        end
       end
+    end
+
+    context "not autheticated" do 
+      include_examples "redirects to login", :get, proc { expenses_path }
     end
   end
 
@@ -73,16 +87,7 @@ RSpec.describe "Expenses", type: :request do
     end
 
     context "not authenticated" do 
-      it "redirects to log in page" do 
-        get new_expense_path
-
-        expect(response).to have_http_status(:found)
-        expect(response).to redirect_to(login_path)
-
-        follow_redirect!
-
-        expect(response.body).to include("Join us!")
-      end
+      include_examples "redirects to login", :get, proc { expenses_path }
     end
   end
 
@@ -91,37 +96,41 @@ RSpec.describe "Expenses", type: :request do
     let(:updated_expense) { { title: "New title", amount: old_expense.amount, spent_on: old_expense.spent_on } }
 
     context "authenticated" do 
-      include_context "authenticated" 
+      context "with valid params" do 
+        include_context "authenticated"
 
-      it "renders form" do 
-        get edit_expense_path(expense)
+        it "renders form" do 
+          get edit_expense_path(expense)
 
-        expect(response).to have_http_status(:ok)
-        expect(response).to render_template(:edit)
-        expect(response.body).to include("expense_title")
+          expect(response).to have_http_status(:ok)
+          expect(response).to render_template(:edit)
+          expect(response.body).to include("expense_title")
+        end
+
+        it "updates expense" do 
+          expect { 
+            patch expense_path(old_expense), params: { expense: updated_expense }
+            old_expense.reload 
+          }.to change{ old_expense.title }.from("Old title").to("New title")
+
+          expect(response).to redirect_to(expense_path(old_expense))
+        end
       end
 
-      it "updates expense" do 
-        expect { 
-          patch expense_path(old_expense), params: { expense: updated_expense }
-          old_expense.reload 
-        }.to change{ old_expense.title }.from("Old title").to("New title")
+      context "with invalid params" do 
+        include_context "authenticated" 
+        let!(:expense){ create(:expense, user: user) }
 
-        expect(response).to redirect_to(expense_path(old_expense))
+        it "returns 422 and renders :edit" do 
+          expect { patch expense_path(expense), params: { expense: invalid_params } }.to_not change(Expense, :count) 
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to render_template(:edit)
+        end
       end
     end
 
     context "not authenticated" do 
-      it "redirects to log in page" do 
-        get edit_expense_path(expense)
-
-        expect(response).to have_http_status(:found)
-        expect(response).to redirect_to(login_path)
-
-        follow_redirect!
-
-        expect(response.body).to include("Join us!")
-      end
+      include_examples "redirects to login", :patch, proc { expense_path(expense) }
     end
   end
 
@@ -152,18 +161,7 @@ RSpec.describe "Expenses", type: :request do
     end
     
     context "not authenticated" do 
-      it "redirects to log in page" do 
-        delete expense_path(expense)
-
-        expect(response).to have_http_status(:found)
-        expect(response).to redirect_to(login_path)
-
-        follow_redirect!
-
-        expect(response.body).to include("Join us!")
-      end
+      include_examples "redirects to login", :delete, proc { expense_path(expense) }
     end
   end
-
-  # TODO: tests for show and edit, render to :edit in PATCH
 end
